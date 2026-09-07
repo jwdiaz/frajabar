@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>El Laberinto de las Factorizaciones — Muinane | FRAYJABAR</title>
+<style>
+  :root{
+    --musgo:#4C7A4B;
+    --musgo-osc:#33512F;
+    --lima:#8FBF3F;
+    --tierra:#5C4633;
+    --tierra-osc:#3E2F22;
+    --dorado:#C9A227;
+    --dorado-tenue:#B8965A;
+    --crema:#EDE7D3;
+    --bg-fondo: radial-gradient(circle at 50% 0%, #33512F 0%, #223420 45%, #16220F 100%);
+    --panel-bg: linear-gradient(180deg, #2E4526 0%, #223418 100%);
+    --sombra: 0 10px 30px rgba(0,0,0,.45);
+    --rad-arco: 46% 46% 10px 10px / 55% 55% 10px 10px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; width:100%; min-height:100%;
+    overflow-x:hidden;
+    background: var(--bg-fondo);
+    color: var(--crema);
+    font-family: "Trebuchet MS", Verdana, Geneva, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1,h2,h3,.titulo-runa{
+    font-family: Rockwell, "Bookman Old Style", Cambria, Georgia, serif;
+    letter-spacing: .3px;
+    margin: 0 0 .4em 0;
+    color: var(--dorado);
+    text-shadow: 0 2px 6px rgba(0,0,0,.5);
+  }
+  button{
+    font-family: inherit;
+    cursor:pointer;
+  }
+  .oculto{ display:none !important; }
+
+  /* ---------- estructura general ---------- */
+  .pantalla{
+    min-height: 100vh;
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding: 28px 16px 60px;
+    position:relative;
+  }
+  .marco-selva{
+    position:fixed; inset:0; pointer-events:none; opacity:.55; z-index:0;
+  }
+  .contenedor{
+    position:relative; z-index:1;
+    width:100%; max-width: 620px;
+    display:flex; flex-direction:column; gap:18px;
+    align-items:stretch;
+  }
+  .tarjeta{
+    background: var(--panel-bg);
+    border: 1px solid rgba(201,162,39,.35);
+    border-radius: 18px 18px 6px 6px;
+    box-shadow: var(--sombra);
+    padding: 22px 20px;
+  }
+  .lore{
+    font-size: .82rem;
+    color: var(--dorado-tenue);
+    text-align:center;
+    line-height:1.5;
+    border-top: 1px dashed rgba(201,162,39,.4);
+    padding-top:10px;
+    margin-top: 6px;
+  }
+  .subtitulo{
+    color: var(--lima);
+    font-size:.95rem;
+    margin-bottom: 14px;
+    line-height:1.5;
+  }
+  label{
+    display:block;
+    font-size:.9rem;
+    color: var(--crema);
+    margin: 12px 0 6px;
+  }
+  input[type=text]{
+    width:100%;
+    padding: 12px 14px;
+    min-height:44px;
+    border-radius: 10px;
+    border: 1px solid var(--tierra);
+    background: #1B2916;
+    color: var(--crema);
+    font-size: 1rem;
+  }
+  input[type=text]:focus{ outline: 2px solid var(--lima); }
+  .error-campo{
+    color:#E7A9A0; font-size:.8rem; min-height: 1.1em; margin-top:4px;
+  }
+
+  .btn{
+    min-height:48px;
+    padding: 12px 22px;
+    border-radius: 12px;
+    border: none;
+    font-weight:bold;
+    font-size:1rem;
+    background: linear-gradient(180deg, var(--lima), #6E9C2E);
+    color: #16220F;
+    box-shadow: 0 4px 0 #4d6e21, 0 8px 16px rgba(0,0,0,.35);
+    transition: transform .08s ease;
+  }
+  .btn:active{ transform: translateY(3px); box-shadow: 0 1px 0 #4d6e21; }
+  .btn-secundario{
+    background: linear-gradient(180deg, var(--dorado-tenue), #8a6a35);
+    color: #241a08;
+    box-shadow: 0 4px 0 #5c4620, 0 8px 16px rgba(0,0,0,.35);
+  }
+  .btn-ancho{ width:100%; }
+  .fila-botones{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:16px;}
+
+  /* ---------- barra superior de juego ---------- */
+  .hud{
+    display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:10px;
+    background: rgba(0,0,0,.28);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-size:.85rem;
+  }
+  .hud-grupo{ display:flex; align-items:center; gap:8px; }
+  .vidas .hoja{ font-size:1.2rem; filter: drop-shadow(0 0 3px rgba(0,0,0,.6)); }
+  .vidas .perdida{ opacity:.25; filter: grayscale(1); }
+  .cronometro{ font-variant-numeric: tabular-nums; color: var(--dorado); font-weight:bold;}
+  #btn-audio{
+    min-height:38px; min-width:44px; padding:6px 10px; border-radius:10px;
+    background:#1B2916; color:var(--crema); border:1px solid var(--tierra);
+  }
+
+  .mapa-puertas{ display:flex; gap:8px; justify-content:center; margin: 4px 0 2px; }
+  .icono-puerta{
+    width: 30px; height: 38px;
+    border-radius: 15px 15px 3px 3px;
+    background: var(--tierra-osc);
+    border: 2px solid var(--dorado-tenue);
+    opacity:.55;
+  }
+  .icono-puerta.actual{ opacity:1; box-shadow: 0 0 10px var(--lima); }
+  .icono-puerta.abierta{ background: var(--lima); opacity:1; border-color: var(--dorado); }
+
+  /* ---------- escena de laberinto (SVG decorativo) ---------- */
+  .escena{
+    position:relative;
+    border-radius: 16px;
+    overflow:hidden;
+    border: 1px solid rgba(201,162,39,.3);
+    min-height: 190px;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(180deg, #24371D 0%, #16220F 100%);
+  }
+  .escena svg{ width:100%; height:190px; display:block; }
+
+  .panel-nivel-titulo{ text-align:center; }
+  .panel-nivel-titulo p{ margin:2px 0 0; color: var(--lima); font-size:.85rem;}
+
+  /* ---------- puerta ---------- */
+  .puerta-ejercicio{
+    text-align:center;
+    background: rgba(0,0,0,.3);
+    border-radius: 14px;
+    padding: 18px 14px;
+    margin-top: 12px;
+  }
+  .puerta-ejercicio .expresion{
+    font-family: Rockwell, Georgia, serif;
+    font-size: 1.5rem;
+    color: var(--crema);
+    letter-spacing: .5px;
+    margin: 6px 0 12px;
+  }
+  .instr-pequena{ color: var(--dorado-tenue); font-size:.8rem; }
+
+  /* ---------- llavero ---------- */
+  .llaves{
+    display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:14px;
+  }
+  @media (max-width:420px){ .llaves{ grid-template-columns: 1fr; } }
+  .llave{
+    background: linear-gradient(180deg,#3a2b16,#241a0c);
+    border: 1px solid var(--dorado-tenue);
+    border-radius: 10px 10px 22px 22px;
+    padding: 14px 10px;
+    text-align:center;
+    color: var(--crema);
+    font-family: Rockwell, Georgia, serif;
+    font-size: 1.02rem;
+    min-height:44px;
+  }
+  .llave:active{ transform: translateY(2px); }
+  .llave .aro{
+    width:16px; height:16px; margin: 0 auto 6px;
+    border: 3px solid var(--dorado);
+    border-radius:50%;
+  }
+  .llave.correcta{ background: linear-gradient(180deg, var(--lima), #4d6e21); color:#16220F; }
+  .llave.incorrecta{ background: linear-gradient(180deg, #7a2f24, #4a1a14); }
+
+  .retro{
+    margin-top:14px; text-align:center; min-height: 1.4em;
+    font-weight:bold; border-radius:10px; padding: 10px; display:none;
+  }
+  .retro.ok{ display:block; background: rgba(143,191,63,.18); color: var(--lima); }
+  .retro.mal{ display:block; background: rgba(180,70,50,.2); color:#E7A9A0; }
+
+  /* ---------- caso practico ---------- */
+  .caso-imagen{ text-align:center; font-size:2.4rem; margin-bottom:6px; }
+  .caso-texto{ line-height:1.55; font-size:.95rem; }
+  .caso-opciones{ display:flex; flex-direction:column; gap:10px; margin-top:14px; }
+  .caso-opcion{
+    text-align:left; padding: 12px 14px; border-radius:12px;
+    border:1px solid var(--tierra); background:#1B2916; color:var(--crema);
+    min-height:44px; font-size:.95rem;
+  }
+  .caso-opcion.correcta{ background: rgba(143,191,63,.25); border-color: var(--lima); }
+  .caso-opcion.incorrecta{ background: rgba(180,70,50,.25); border-color:#a9463a; }
+  .caso-explicacion{
+    margin-top:12px; background: rgba(0,0,0,.3); border-radius:10px; padding:12px 14px;
+    font-size:.88rem; line-height:1.5; display:none;
+  }
+
+  /* ---------- final ---------- */
+  .nota-grande{
+    text-align:center; font-family: Rockwell, Georgia, serif;
+    font-size: 3.2rem; color: var(--dorado); margin: 6px 0;
+    text-shadow: 0 2px 10px rgba(0,0,0,.6);
+  }
+  .tabla-resumen{ width:100%; border-collapse: collapse; font-size:.9rem; margin-top:10px;}
+  .tabla-resumen td{ padding:6px 4px; border-bottom: 1px dashed rgba(201,162,39,.3); }
+  .tabla-resumen td:last-child{ text-align:right; color:var(--lima); font-weight:bold; }
+  ul.resumen-conceptos{ line-height:1.7; padding-left: 20px; font-size:.92rem; }
+
+  .escudo-linea{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-top: 6px; font-size:.75rem; color: var(--dorado-tenue);
+  }
+</style>
+</head>
+<body>
+
+<svg class="marco-selva" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+  <!-- decoración de vides, se dibuja por JS para cubrir todo el alto -->
+</svg>
+
+<!-- ============ PANTALLA 1: REGISTRO ============ -->
+<section id="pantalla-registro" class="pantalla">
+  <div class="contenedor">
+    <div class="tarjeta">
+      <h1 class="titulo-runa" style="text-align:center;">🌿 El Laberinto de las Factorizaciones</h1>
+      <p class="subtitulo" style="text-align:center;">Antes de entrar a la selva de Muinane, los guardianes necesitan registrar tu nombre.</p>
+
+      <label for="campo-nombre">Nombre del estudiante</label>
+      <input type="text" id="campo-nombre" placeholder="Escribe tu nombre completo" maxlength="60">
+      <div class="error-campo" id="error-nombre"></div>
+
+      <label for="campo-grado">Grado</label>
+      <input type="text" id="campo-grado" placeholder="Ej: Octavo A" maxlength="30">
+      <div class="error-campo" id="error-grado"></div>
+
+      <div class="fila-botones">
+        <button class="btn btn-ancho" id="btn-registrar">Continuar →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PANTALLA 2: INICIO ============ -->
+<section id="pantalla-inicio" class="pantalla oculto">
+  <div class="contenedor">
+    <div class="tarjeta">
+      <h1 class="titulo-runa" style="text-align:center;">El Laberinto de las Factorizaciones</h1>
+      <p class="subtitulo">Bienvenido(a), <strong id="saludo-nombre"></strong>. Te adentrarás en la selva profunda de <strong>Muinane</strong>, donde se guardan los saberes más antiguos.</p>
+
+      <div class="escena" id="escena-portada"></div>
+
+      <div class="puerta-ejercicio" style="text-align:left;">
+        <h3 style="margin-bottom:8px;">¿Cómo se juega?</h3>
+        <p class="caso-texto">
+          Recorrerás <strong>4 niveles</strong>. En cada nivel hay un laberinto con <strong>4 puertas</strong>.
+          Cada puerta tiene un ejercicio de factorización: léelo con atención y <strong>memoriza la respuesta correcta</strong>.
+          Luego camina hasta el llavero, ubicado en el centro del laberinto, y elige — de memoria — la llave
+          con la factorización correcta. Si aciertas, la puerta se abre. Si fallas, pierdes una vida.
+        </p>
+        <p class="caso-texto">
+          Tienes solo <strong>2 vidas</strong>. Si las pierdes ambas, deberás reiniciar todos los niveles desde
+          el principio... y el reloj no se detendrá.
+        </p>
+      </div>
+
+      <div class="fila-botones">
+        <button class="btn btn-ancho" id="btn-jugar">🌱 Jugar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PANTALLA 3: JUEGO ============ -->
+<section id="pantalla-juego" class="pantalla oculto">
+  <div class="contenedor">
+
+    <div class="hud">
+      <div class="hud-grupo vidas" id="hud-vidas"></div>
+      <div class="hud-grupo cronometro">⏱ <span id="hud-tiempo">00:00</span></div>
+      <button id="btn-audio">🔊</button>
+    </div>
+
+    <div class="tarjeta">
+      <div class="panel-nivel-titulo">
+        <h2 id="titulo-nivel">Nivel 1 — Factor común</h2>
+        <p id="sub-nivel">Encuentra las 4 puertas para avanzar</p>
+      </div>
+
+      <div class="mapa-puertas" id="mapa-puertas"></div>
+
+      <div class="escena" id="escena-nivel"></div>
+
+      <!-- Vista puerta -->
+      <div id="vista-puerta">
+        <div class="puerta-ejercicio">
+          <p class="instr-pequena">Puerta <span id="num-puerta">1</span> de 4 — factoriza esta expresión</p>
+          <div class="expresion" id="expresion-ejercicio">6x + 9</div>
+          <p class="instr-pequena">Memoriza tu respuesta y camina hacia el llavero.</p>
+        </div>
+        <div class="fila-botones">
+          <button class="btn btn-ancho" id="btn-ir-llavero">🔑 Ir al llavero</button>
+        </div>
+      </div>
+
+      <!-- Vista llavero -->
+      <div id="vista-llavero" class="oculto">
+        <p class="instr-pequena" style="text-align:center;">
+          Elige, de memoria, la llave con la factorización correcta de la puerta <span id="num-puerta-2">1</span>.
+        </p>
+        <div class="llaves" id="contenedor-llaves"></div>
+        <div class="retro" id="retro-llavero"></div>
+        <div class="fila-botones">
+          <button class="btn btn-secundario" id="btn-volver-puerta">← Volver a ver la puerta</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="tarjeta oculto" id="tarjeta-transicion">
+      <h2 style="text-align:center;" id="titulo-transicion">¡Nivel superado!</h2>
+      <p class="subtitulo" style="text-align:center;" id="texto-transicion"></p>
+      <div class="fila-botones">
+        <button class="btn btn-ancho" id="btn-siguiente-nivel">Continuar →</button>
+      </div>
+    </div>
+
+    <div class="tarjeta oculto" id="tarjeta-reinicio">
+      <h2 style="text-align:center; color:#E7A9A0;">Has perdido tus 2 vidas</h2>
+      <p class="subtitulo" style="text-align:center;">
+        Los espíritus de la selva te devuelven al inicio del laberinto. Todos los niveles se reinician...
+        pero el tiempo sigue corriendo.
+      </p>
+      <div class="fila-botones">
+        <button class="btn btn-ancho" id="btn-reintentar">Reiniciar recorrido</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ PANTALLA 4: CASO PRÁCTICO ============ -->
+<section id="pantalla-caso" class="pantalla oculto">
+  <div class="contenedor">
+    <div class="tarjeta">
+      <h2 style="text-align:center;">🌾 El jardín de Muinane</h2>
+      <div class="caso-imagen">🌻🌳🌻</div>
+      <p class="caso-texto">
+        Antes de salir del laberinto, la anciana guardiana del poblado te pide ayuda con un problema real:
+        quiere construir un <strong>jardín rectangular</strong> y solo tiene material para <strong>24 metros de cerca</strong>.
+        Sabe que el área de su jardín, en metros cuadrados, se representa con la expresión
+        <strong>x² + 5x + 6</strong>, pero no conoce las medidas exactas de ancho y largo.
+      </p>
+      <div id="caso-contenido"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PANTALLA 5: FINAL ============ -->
+<section id="pantalla-final" class="pantalla oculto">
+  <div class="contenedor">
+    <div class="tarjeta">
+      <h2 style="text-align:center;">🏆 Has cruzado el Laberinto de Muinane</h2>
+      <p class="subtitulo" style="text-align:center;">Resultado final de <strong id="final-nombre"></strong> — <span id="final-grado"></span></p>
+
+      <p style="text-align:center; margin:0;" class="instr-pequena">Calificación (escala 1.0 a 5.0)</p>
+      <div class="nota-grande" id="final-nota">5.0</div>
+
+      <table class="tabla-resumen">
+        <tr><td>Puertas resueltas correctamente</td><td id="final-puertas"></td></tr>
+        <tr><td>Vidas perdidas en total</td><td id="final-vidas"></td></tr>
+        <tr><td>Aciertos en el caso práctico del jardín</td><td id="final-caso"></td></tr>
+        <tr><td>Tiempo total de juego</td><td id="final-tiempo"></td></tr>
+      </table>
+
+      <h3 style="margin-top:18px;">Lo que aprendiste en la selva de Muinane</h3>
+      <ul class="resumen-conceptos">
+        <li><strong>Factor común:</strong> extraer el elemento que se repite en todos los términos.</li>
+        <li><strong>Diferencia de cuadrados:</strong> a² − b² = (a + b)(a − b).</li>
+        <li><strong>Trinomio x² + bx + c:</strong> hallar dos números que multiplicados den c y sumados den b.</li>
+        <li><strong>Trinomio ax² + bx + c:</strong> factorizar cuando el término cuadrático tiene un coeficiente distinto de 1.</li>
+      </ul>
+
+      <div class="lore">
+        Este relato pertenece al multiverso educativo <strong>FRAYJABAR</strong> — mundo <strong>Muinane</strong>,
+        la selva profunda de musgo y tierra dorada donde se guardan los saberes más antiguos.
+        Otros guardianes de otros mundos esperan tu llegada...
+      </div>
+      <div class="escudo-linea">🏫 I.E Residencia Escolar Fray Javier de Barcelona · Tecnologías para Aprender</div>
+
+      <div class="fila-botones">
+        <button class="btn btn-ancho" id="btn-jugar-de-nuevo">Volver a empezar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   DATOS DEL JUEGO
+   ========================================================= */
+const NIVELES = [
+  {
+    titulo: "Nivel 1 — Factor común",
+    sub: "Extrae el factor que se repite en cada término",
+    puertas: [
+      { ejercicio:"6x + 9", correcta:"3(2x + 3)", opciones:["3(2x + 3)","3(2x − 3)","6(x + 9)","3x(2 + 3)"] },
+      { ejercicio:"4x² + 8x", correcta:"4x(x + 2)", opciones:["4x(x + 2)","4x(x − 2)","2x(2x + 4)","4(x² + 2x)"] },
+      { ejercicio:"10x³ − 5x²", correcta:"5x²(2x − 1)", opciones:["5x²(2x − 1)","5x²(2x + 1)","5x(2x² − 1)","10x²(x − 1)"] },
+      { ejercicio:"12x + 18y", correcta:"6(2x + 3y)", opciones:["6(2x + 3y)","6(2x − 3y)","3(4x + 6y)","6(2x + 3)"] }
+    ]
+  },
+  {
+    titulo: "Nivel 2 — Diferencia de cuadrados",
+    sub: "a² − b² = (a + b)(a − b)",
+    puertas: [
+      { ejercicio:"x² − 9", correcta:"(x + 3)(x − 3)", opciones:["(x + 3)(x − 3)","(x + 9)(x − 1)","(x − 3)(x − 3)","(x + 3)(x + 3)"] },
+      { ejercicio:"x² − 25", correcta:"(x + 5)(x − 5)", opciones:["(x + 5)(x − 5)","(x + 25)(x − 1)","(x − 5)(x − 5)","(x + 5)²"] },
+      { ejercicio:"4x² − 1", correcta:"(2x + 1)(2x − 1)", opciones:["(2x + 1)(2x − 1)","(4x + 1)(x − 1)","(2x − 1)(2x − 1)","(2x + 1)²"] },
+      { ejercicio:"9x² − 16", correcta:"(3x + 4)(3x − 4)", opciones:["(3x + 4)(3x − 4)","(3x − 4)(3x − 4)","(9x + 16)(x − 1)","(3x + 4)²"] }
+    ]
+  },
+  {
+    titulo: "Nivel 3 — Trinomio x² + bx + c",
+    sub: "Por tanteo o método de aspas",
+    puertas: [
+      { ejercicio:"x² + 5x + 6", correcta:"(x + 2)(x + 3)", opciones:["(x + 2)(x + 3)","(x + 1)(x + 6)","(x − 2)(x − 3)","(x + 6)(x − 1)"] },
+      { ejercicio:"x² − 7x + 12", correcta:"(x − 3)(x − 4)", opciones:["(x − 3)(x − 4)","(x + 3)(x + 4)","(x − 2)(x − 6)","(x − 1)(x − 12)"] },
+      { ejercicio:"x² + 2x − 15", correcta:"(x + 5)(x − 3)", opciones:["(x + 5)(x − 3)","(x − 5)(x + 3)","(x + 15)(x − 1)","(x + 1)(x − 15)"] },
+      { ejercicio:"x² − x − 6", correcta:"(x − 3)(x + 2)", opciones:["(x − 3)(x + 2)","(x + 3)(x − 2)","(x − 6)(x + 1)","(x − 1)(x + 6)"] }
+    ]
+  },
+  {
+    titulo: "Nivel 4 — Trinomio ax² + bx + c",
+    sub: "El coeficiente del término cuadrático ya no es 1",
+    puertas: [
+      { ejercicio:"2x² + 7x + 3", correcta:"(2x + 1)(x + 3)", opciones:["(2x + 1)(x + 3)","(2x + 3)(x + 1)","(2x + 1)(x − 3)","(x + 1)(2x − 3)"] },
+      { ejercicio:"3x² − 5x + 2", correcta:"(3x − 2)(x − 1)", opciones:["(3x − 2)(x − 1)","(3x + 2)(x + 1)","(3x − 1)(x − 2)","(x − 2)(3x + 1)"] },
+      { ejercicio:"2x² − x − 6", correcta:"(2x + 3)(x − 2)", opciones:["(2x + 3)(x − 2)","(2x − 3)(x + 2)","(2x + 3)(x + 2)","(x − 3)(2x + 2)"] },
+      { ejercicio:"6x² + 7x + 2", correcta:"(2x + 1)(3x + 2)", opciones:["(2x + 1)(3x + 2)","(3x + 1)(2x + 2)","(2x + 2)(3x + 1)","(6x + 1)(x + 2)"] }
+    ]
+  }
+];
+
+const CASO_DECISIONES = [
+  {
+    pregunta: "El área del jardín es x² + 5x + 6 m². ¿Cuál es su factorización correcta?",
+    opciones: [
+      {texto:"(x + 2)(x + 3)", correcta:true},
+      {texto:"(x + 6)(x − 1)", correcta:false},
+      {texto:"(x + 1)(x + 6)", correcta:false},
+      {texto:"(x − 2)(x − 3)", correcta:false}
+    ],
+    explicacion: "Buscamos dos números que multiplicados den 6 y sumados den 5: son 2 y 3. Por eso el área se factoriza como (x + 2)(x + 3)."
+  },
+  {
+    pregunta: "¿Qué representan, en el jardín, los factores (x + 2) y (x + 3)?",
+    opciones: [
+      {texto:"El ancho y el largo del jardín", correcta:true},
+      {texto:"El número de plantas que caben", correcta:false},
+      {texto:"El precio del metro de cerca", correcta:false},
+      {texto:"El tiempo que tarda en crecer", correcta:false}
+    ],
+    explicacion: "Factorizar el área es literalmente encontrar las dos dimensiones (ancho y largo) que, multiplicadas, dan esa área total."
+  },
+  {
+    pregunta: "Si x = 4, el ancho es (x+2) = 6 m y el largo es (x+3) = 7 m. ¿Cuál es el área real del jardín?",
+    opciones: [
+      {texto:"42 m²", correcta:true},
+      {texto:"36 m²", correcta:false},
+      {texto:"49 m²", correcta:false},
+      {texto:"30 m²", correcta:false}
+    ],
+    explicacion: "Área = ancho × largo = 6 × 7 = 42 m², que coincide con reemplazar x = 4 en x² + 5x + 6 = 16 + 20 + 6 = 42."
+  },
+  {
+    pregunta: "Con ancho de 6 m y largo de 7 m, el perímetro es 2(6+7) = 26 m. La guardiana solo tiene 24 metros de cerca. ¿Qué decisión es correcta?",
+    opciones: [
+      {texto:"No alcanza: faltan 2 metros de cerca", correcta:true},
+      {texto:"Sí alcanza y sobran 2 metros", correcta:false},
+      {texto:"Alcanza exactamente", correcta:false},
+      {texto:"No alcanza: faltan 10 metros", correcta:false}
+    ],
+    explicacion: "El perímetro necesario es 26 m y solo hay 24 m disponibles, así que faltan 2 metros: la guardiana debe reducir el jardín o conseguir más cerca."
+  }
+];
+
+/* =========================================================
+   ESTADO DEL JUEGO
+   ========================================================= */
+const estado = {
+  nombre:"", grado:"",
+  nivelIdx:0, puertaIdx:0,
+  vidas:2, vidasPerdidasTotal:0,
+  aciertosGlobales:0, intentosGlobales:0,
+  puertasAbiertas: NIVELES.map(n => n.puertas.map(()=>false)),
+  segundos:0, cronometroId:null,
+  opcionesActuales:[],
+  casoIdx:0, casoCorrectos:0,
+  audioActivo:true
+};
+
+/* =========================================================
+   AUDIO — Web Audio API pura, sin archivos externos
+   ========================================================= */
+let actx = null;
+let nodoAmbiente = null;
+let idIntervaloPajaros = null;
+
+function obtenerContexto(){
+  if(!actx){
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if(actx.state === "suspended"){ actx.resume(); }
+  return actx;
+}
+
+function crearRuidoBuffer(ctx, duracion){
+  const buffer = ctx.createBuffer(1, ctx.sampleRate*duracion, ctx.sampleRate);
+  const datos = buffer.getChannelData(0);
+  for(let i=0;i<datos.length;i++){ datos[i] = Math.random()*2-1; }
+  return buffer;
+}
+
+function tono(freq, dur, tipo, volumen, ctx, tSuma, deslizarA){
+  if(!estado.audioActivo) return;
+  ctx = ctx || obtenerContexto();
+  tSuma = tSuma || 0;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = tipo || "sine";
+  osc.frequency.setValueAtTime(freq, ctx.currentTime + tSuma);
+  if(deslizarA){
+    osc.frequency.exponentialRampToValueAtTime(Math.max(deslizarA,1), ctx.currentTime + tSuma + dur);
+  }
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime + tSuma);
+  gain.gain.exponentialRampToValueAtTime(volumen||0.2, ctx.currentTime + tSuma + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + tSuma + dur);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(ctx.currentTime + tSuma);
+  osc.stop(ctx.currentTime + tSuma + dur + 0.05);
+}
+
+function ruidoCorto(dur, volumen, filtroFreq, ctx, tSuma){
+  if(!estado.audioActivo) return;
+  ctx = ctx || obtenerContexto();
+  tSuma = tSuma || 0;
+  const buffer = crearRuidoBuffer(ctx, dur);
+  const fuente = ctx.createBufferSource();
+  fuente.buffer = buffer;
+  const filtro = ctx.createBiquadFilter();
+  filtro.type = "lowpass";
+  filtro.frequency.value = filtroFreq || 800;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime + tSuma);
+  gain.gain.exponentialRampToValueAtTime(volumen||0.25, ctx.currentTime + tSuma + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + tSuma + dur);
+  fuente.connect(filtro).connect(gain).connect(ctx.destination);
+  fuente.start(ctx.currentTime + tSuma);
+}
+
+function sonidoLlegadaPuerta(){
+  tono(220,0.35,"triangle",0.18);
+  tono(330,0.3,"sine",0.12,null,0.1);
+}
+function sonidoLlavero(){
+  tono(880,0.08,"square",0.06);
+  tono(990,0.08,"square",0.06,null,0.09);
+  tono(1180,0.1,"square",0.06,null,0.18);
+}
+function sonidoCorrecto(){
+  tono(523,0.14,"sine",0.2);
+  tono(659,0.14,"sine",0.2,null,0.13);
+  tono(784,0.22,"sine",0.22,null,0.26);
+}
+function sonidoIncorrecto(){
+  tono(140,0.35,"sawtooth",0.18);
+  ruidoCorto(0.25,0.2,500);
+}
+function sonidoAbrirPuerta(){
+  tono(180,0.6,"sawtooth",0.15,null,0,320);
+  ruidoCorto(0.4,0.15,600);
+}
+function sonidoReinicio(){
+  ruidoCorto(1.4,0.28,180);
+  tono(70,1.3,"sine",0.22);
+}
+function sonidoNivelCompleto(){
+  [523,659,784,1046].forEach((f,i)=> tono(f,0.22,"triangle",0.2,null,i*0.14));
+}
+
+function iniciarAmbiente(){
+  if(!estado.audioActivo) return;
+  const ctx = obtenerContexto();
+  if(nodoAmbiente) return;
+  const master = ctx.createGain();
+  master.gain.value = 0.07;
+  master.connect(ctx.destination);
+
+  const o1 = ctx.createOscillator();
+  o1.type="sine"; o1.frequency.value=65;
+  const o2 = ctx.createOscillator();
+  o2.type="sine"; o2.frequency.value=97;
+  o1.connect(master); o2.connect(master);
+  o1.start(); o2.start();
+
+  const bufferViento = crearRuidoBuffer(ctx, 4);
+  const fuenteViento = ctx.createBufferSource();
+  fuenteViento.buffer = bufferViento; fuenteViento.loop = true;
+  const filtroViento = ctx.createBiquadFilter();
+  filtroViento.type="bandpass"; filtroViento.frequency.value=500; filtroViento.Q.value=0.6;
+  const gainViento = ctx.createGain(); gainViento.gain.value=0.05;
+  fuenteViento.connect(filtroViento).connect(gainViento).connect(ctx.destination);
+  fuenteViento.start();
+
+  nodoAmbiente = {master, o1, o2, fuenteViento};
+
+  idIntervaloPajaros = setInterval(()=>{
+    if(!estado.audioActivo) return;
+    if(Math.random() < 0.6){
+      const base = 1400 + Math.random()*900;
+      tono(base, 0.12, "sine", 0.05);
+      tono(base*1.2, 0.09, "sine", 0.04, null, 0.1);
+    }
+  }, 2600);
+}
+
+function alternarAudio(){
+  estado.audioActivo = !estado.audioActivo;
+  document.getElementById("btn-audio").textContent = estado.audioActivo ? "🔊" : "🔇";
+  if(estado.audioActivo){ iniciarAmbiente(); }
+  else if(nodoAmbiente){
+    try{
+      nodoAmbiente.o1.stop(); nodoAmbiente.o2.stop(); nodoAmbiente.fuenteViento.stop();
+    }catch(e){}
+    nodoAmbiente = null;
+    clearInterval(idIntervaloPajaros);
+  }
+}
+
+/* =========================================================
+   UTILIDADES DE PANTALLA
+   ========================================================= */
+function mostrarPantalla(id){
+  document.querySelectorAll(".pantalla").forEach(p => p.classList.add("oculto"));
+  document.getElementById(id).classList.remove("oculto");
+  window.scrollTo(0,0);
+}
+
+function mezclar(array){
+  const copia = array.slice();
+  for(let i=copia.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [copia[i],copia[j]] = [copia[j],copia[i]];
+  }
+  return copia;
+}
+
+function formatoTiempo(seg){
+  const m = Math.floor(seg/60).toString().padStart(2,"0");
+  const s = Math.floor(seg%60).toString().padStart(2,"0");
+  return m+":"+s;
+}
+
+/* =========================================================
+   SVG decorativos (escenas de selva / laberinto)
+   ========================================================= */
+function svgEscena(colorHojas){
+  colorHojas = colorHojas || "#6E9C2E";
+  return `<svg viewBox="0 0 400 190" xmlns="http://www.w3.org/2000/svg">
+    <rect width="400" height="190" fill="#16220F"/>
+    <path d="M0,190 L0,140 Q40,110 80,140 T160,140 T240,140 T320,140 T400,140 L400,190 Z" fill="#223418"/>
+    <path d="M0,190 L0,165 Q60,150 120,165 T240,165 T360,165 T400,165 L400,190 Z" fill="#2E4526"/>
+    ${Array.from({length:6}).map((_,i)=>{
+      const x = 20 + i*68;
+      return `<circle cx="${x}" cy="${40+ (i%2)*14}" r="${18+(i%3)*4}" fill="${colorHojas}" opacity="0.35"/>`;
+    }).join("")}
+    <rect x="170" y="80" width="60" height="90" rx="30" ry="34" fill="#3E2F22" stroke="#B8965A" stroke-width="3"/>
+    <circle cx="220" cy="128" r="4" fill="#C9A227"/>
+  </svg>`;
+}
+
+/* =========================================================
+   PANTALLA REGISTRO
+   ========================================================= */
+document.getElementById("btn-registrar").addEventListener("click", ()=>{
+  const nombre = document.getElementById("campo-nombre").value.trim();
+  const grado = document.getElementById("campo-grado").value.trim();
+  let ok = true;
+  document.getElementById("error-nombre").textContent = "";
+  document.getElementById("error-grado").textContent = "";
+  if(nombre.length < 2){ document.getElementById("error-nombre").textContent = "Escribe tu nombre completo."; ok=false; }
+  if(grado.length < 1){ document.getElementById("error-grado").textContent = "Escribe tu grado."; ok=false; }
+  if(!ok) return;
+  estado.nombre = nombre; estado.grado = grado;
+  document.getElementById("saludo-nombre").textContent = nombre;
+  document.getElementById("escena-portada").innerHTML = svgEscena("#8FBF3F");
+  mostrarPantalla("pantalla-inicio");
+});
+
+/* =========================================================
+   PANTALLA INICIO -> JUEGO
+   ========================================================= */
+document.getElementById("btn-jugar").addEventListener("click", ()=>{
+  obtenerContexto();
+  iniciarAmbiente();
+  mostrarPantalla("pantalla-juego");
+  iniciarCronometro();
+  renderNivel();
+});
+
+function iniciarCronometro(){
+  if(estado.cronometroId) return;
+  estado.cronometroId = setInterval(()=>{
+    estado.segundos++;
+    document.getElementById("hud-tiempo").textContent = formatoTiempo(estado.segundos);
+  },1000);
+}
+
+/* =========================================================
+   RENDER DEL JUEGO
+   ========================================================= */
+function renderVidas(){
+  const cont = document.getElementById("hud-vidas");
+  cont.innerHTML = "";
+  for(let i=0;i<2;i++){
+    const span = document.createElement("span");
+    span.className = "hoja" + (i < estado.vidas ? "" : " perdida");
+    span.textContent = "🍃";
+    cont.appendChild(span);
+  }
+}
+
+function renderMapaPuertas(){
+  const cont = document.getElementById("mapa-puertas");
+  cont.innerHTML = "";
+  const puertas = estado.puertasAbiertas[estado.nivelIdx];
+  puertas.forEach((abierta,i)=>{
+    const d = document.createElement("div");
+    d.className = "icono-puerta" + (abierta ? " abierta" : "") + (i===estado.puertaIdx && !abierta ? " actual" : "");
+    cont.appendChild(d);
+  });
+}
+
+function renderNivel(){
+  const nivel = NIVELES[estado.nivelIdx];
+  document.getElementById("titulo-nivel").textContent = nivel.titulo;
+  document.getElementById("sub-nivel").textContent = nivel.sub;
+  document.getElementById("escena-nivel").innerHTML = svgEscena();
+  document.getElementById("tarjeta-transicion").classList.add("oculto");
+  document.getElementById("tarjeta-reinicio").classList.add("oculto");
+  document.getElementById("vista-puerta").classList.remove("oculto");
+  document.getElementById("vista-llavero").classList.add("oculto");
+  renderVidas();
+  renderPuertaActual();
+}
+
+function siguientePuertaSinAbrir(){
+  const puertas = estado.puertasAbiertas[estado.nivelIdx];
+  for(let i=0;i<puertas.length;i++){
+    if(!puertas[i]) return i;
+  }
+  return -1;
+}
+
+function renderPuertaActual(){
+  estado.puertaIdx = siguientePuertaSinAbrir();
+  renderMapaPuertas();
+  const nivel = NIVELES[estado.nivelIdx];
+  const puerta = nivel.puertas[estado.puertaIdx];
+  document.getElementById("num-puerta").textContent = estado.puertaIdx+1;
+  document.getElementById("num-puerta-2").textContent = estado.puertaIdx+1;
+  document.getElementById("expresion-ejercicio").textContent = puerta.ejercicio;
+  document.getElementById("retro-llavero").className = "retro";
+  document.getElementById("retro-llavero").textContent = "";
+  sonidoLlegadaPuerta();
+}
+
+document.getElementById("btn-ir-llavero").addEventListener("click", ()=>{
+  document.getElementById("vista-puerta").classList.add("oculto");
+  document.getElementById("vista-llavero").classList.remove("oculto");
+  sonidoLlavero();
+  renderLlaves();
+});
+
+document.getElementById("btn-volver-puerta").addEventListener("click", ()=>{
+  document.getElementById("vista-llavero").classList.add("oculto");
+  document.getElementById("vista-puerta").classList.remove("oculto");
+});
+
+function renderLlaves(){
+  const nivel = NIVELES[estado.nivelIdx];
+  const puerta = nivel.puertas[estado.puertaIdx];
+  estado.opcionesActuales = mezclar(puerta.opciones);
+  const cont = document.getElementById("contenedor-llaves");
+  cont.innerHTML = "";
+  estado.opcionesActuales.forEach(opcion=>{
+    const btn = document.createElement("button");
+    btn.className = "llave";
+    btn.innerHTML = `<div class="aro"></div>${opcion}`;
+    btn.addEventListener("click", ()=> elegirLlave(opcion, btn));
+    cont.appendChild(btn);
+  });
+}
+
+function elegirLlave(opcionTexto, boton){
+  const nivel = NIVELES[estado.nivelIdx];
+  const puerta = nivel.puertas[estado.puertaIdx];
+  estado.intentosGlobales++;
+  const esCorrecta = opcionTexto === puerta.correcta;
+
+  document.querySelectorAll(".llave").forEach(b=> b.disabled = true);
+
+  if(esCorrecta){
+    estado.aciertosGlobales++;
+    boton.classList.add("correcta");
+    sonidoCorrecto();
+    const r = document.getElementById("retro-llavero");
+    r.className = "retro ok";
+    r.textContent = "¡La llave encaja! La puerta se abre con un crujido antiguo.";
+    setTimeout(()=>{
+      sonidoAbrirPuerta();
+      estado.puertasAbiertas[estado.nivelIdx][estado.puertaIdx] = true;
+      avanzarDespuesDeAbrir();
+    }, 700);
+  } else {
+    boton.classList.add("incorrecta");
+    sonidoIncorrecto();
+    perderVida();
+  }
+}
+
+function perderVida(){
+  estado.vidas--;
+  estado.vidasPerdidasTotal++;
+  renderVidas();
+  const r = document.getElementById("retro-llavero");
+  r.className = "retro mal";
+  r.textContent = estado.vidas>0
+    ? "Esa llave no encaja... pierdes una vida. Vuelve a la puerta y observa de nuevo."
+    : "Esa llave no encaja... has perdido tu última vida.";
+  setTimeout(()=>{
+    document.querySelectorAll(".llave").forEach(b=> b.disabled = false);
+    document.querySelectorAll(".llave").forEach(b=> b.classList.remove("incorrecta"));
+    if(estado.vidas<=0){
+      mostrarReinicio();
+    } else {
+      document.getElementById("vista-llavero").classList.add("oculto");
+      document.getElementById("vista-puerta").classList.remove("oculto");
+      r.className="retro"; r.textContent="";
+    }
+  }, 1100);
+}
+
+function mostrarReinicio(){
+  sonidoReinicio();
+  document.getElementById("tarjeta-reinicio").classList.remove("oculto");
+}
+
+document.getElementById("btn-reintentar").addEventListener("click", ()=>{
+  estado.vidas = 2;
+  estado.nivelIdx = 0;
+  estado.puertasAbiertas = NIVELES.map(n => n.puertas.map(()=>false));
+  renderNivel();
+});
+
+function avanzarDespuesDeAbrir(){
+  const puertas = estado.puertasAbiertas[estado.nivelIdx];
+  const quedan = puertas.some(p=>!p);
+  if(quedan){
+    document.getElementById("vista-llavero").classList.add("oculto");
+    document.getElementById("vista-puerta").classList.remove("oculto");
+    renderPuertaActual();
+  } else {
+    mostrarTransicionNivel();
+  }
+}
+
+function mostrarTransicionNivel(){
+  sonidoNivelCompleto();
+  const esUltimo = estado.nivelIdx === NIVELES.length-1;
+  document.getElementById("titulo-transicion").textContent = esUltimo
+    ? "¡Has cruzado los cuatro niveles del laberinto!"
+    : "¡Nivel superado!";
+  document.getElementById("texto-transicion").textContent = esUltimo
+    ? "La anciana guardiana del poblado te espera con un último reto antes de salir de la selva."
+    : "Las cuatro puertas se abrieron. El sendero continúa hacia una zona más profunda de la selva.";
+  document.getElementById("btn-siguiente-nivel").textContent = esUltimo ? "Ir al reto final →" : "Continuar →";
+  document.getElementById("tarjeta-transicion").classList.remove("oculto");
+}
+
+document.getElementById("btn-siguiente-nivel").addEventListener("click", ()=>{
+  const esUltimo = estado.nivelIdx === NIVELES.length-1;
+  if(esUltimo){
+    iniciarCasoPractico();
+  } else {
+    estado.nivelIdx++;
+    renderNivel();
+  }
+});
+
+/* =========================================================
+   CASO PRÁCTICO INTERACTIVO
+   ========================================================= */
+function iniciarCasoPractico(){
+  mostrarPantalla("pantalla-caso");
+  estado.casoIdx = 0;
+  estado.casoCorrectos = 0;
+  renderDecisionCaso();
+}
+
+function renderDecisionCaso(){
+  const cont = document.getElementById("caso-contenido");
+  if(estado.casoIdx >= CASO_DECISIONES.length){
+    irAPantallaFinal();
+    return;
+  }
+  const d = CASO_DECISIONES[estado.casoIdx];
+  cont.innerHTML = `
+    <p class="instr-pequena">Decisión ${estado.casoIdx+1} de ${CASO_DECISIONES.length}</p>
+    <p class="caso-texto"><strong>${d.pregunta}</strong></p>
+    <div class="caso-opciones" id="caso-opciones"></div>
+    <div class="caso-explicacion" id="caso-explicacion">${d.explicacion}</div>
+    <div class="fila-botones">
+      <button class="btn btn-ancho oculto" id="btn-caso-continuar">Continuar →</button>
+    </div>
+  `;
+  const contOpciones = document.getElementById("caso-opciones");
+  d.opciones.forEach(op=>{
+    const btn = document.createElement("button");
+    btn.className = "caso-opcion";
+    btn.textContent = op.texto;
+    btn.addEventListener("click", ()=> responderCaso(op, btn));
+    contOpciones.appendChild(btn);
+  });
+}
+
+function responderCaso(opcion, boton){
+  document.querySelectorAll(".caso-opcion").forEach(b=> b.disabled = true);
+  if(opcion.correcta){
+    boton.classList.add("correcta");
+    estado.casoCorrectos++;
+    sonidoCorrecto();
+  } else {
+    boton.classList.add("incorrecta");
+    sonidoIncorrecto();
+    document.querySelectorAll(".caso-opcion").forEach(b=>{
+      if(b.textContent === CASO_DECISIONES[estado.casoIdx].opciones.find(o=>o.correcta).texto){
+        b.classList.add("correcta");
+      }
+    });
+  }
+  document.getElementById("caso-explicacion").style.display = "block";
+  const btnContinuar = document.getElementById("btn-caso-continuar");
+  btnContinuar.classList.remove("oculto");
+  btnContinuar.addEventListener("click", ()=>{
+    estado.casoIdx++;
+    renderDecisionCaso();
+  }, {once:true});
+}
+
+/* =========================================================
+   PANTALLA FINAL
+   ========================================================= */
+function irAPantallaFinal(){
+  clearInterval(estado.cronometroId);
+  const totalPuertas = NIVELES.reduce((s,n)=>s+n.puertas.length,0);
+  const eficiencia = estado.intentosGlobales>0 ? (estado.aciertosGlobales/estado.intentosGlobales) : 1;
+  const razonCaso = estado.casoCorrectos / CASO_DECISIONES.length;
+  const combinado = eficiencia*0.7 + razonCaso*0.3;
+  let nota = 1.0 + 4.0*combinado;
+  nota = Math.max(1.0, Math.min(5.0, nota));
+  nota = Math.round(nota*10)/10;
+
+  document.getElementById("final-nombre").textContent = estado.nombre;
+  document.getElementById("final-grado").textContent = estado.grado;
+  document.getElementById("final-nota").textContent = nota.toFixed(1);
+  document.getElementById("final-puertas").textContent = totalPuertas + " de " + totalPuertas;
+  document.getElementById("final-vidas").textContent = estado.vidasPerdidasTotal;
+  document.getElementById("final-caso").textContent = estado.casoCorrectos + " de " + CASO_DECISIONES.length;
+  document.getElementById("final-tiempo").textContent = formatoTiempo(estado.segundos);
+
+  mostrarPantalla("pantalla-final");
+}
+
+document.getElementById("btn-jugar-de-nuevo").addEventListener("click", ()=>{
+  window.location.reload();
+});
+
+document.getElementById("btn-audio").addEventListener("click", alternarAudio);
+
+})();
+</script>
+</body>
+</html>
